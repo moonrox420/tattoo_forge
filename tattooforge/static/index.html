@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>TattooForge Pro — 3D Tattoo Visualization & Stencil Workstation</title>
+  <link rel="stylesheet" href="/static/css/studio.css">
+  
+  <!-- Offline-ready Three.js Suite -->
+  <script src="/static/js/three.min.js"></script>
+  <script src="/static/js/OrbitControls.js"></script>
+  <script src="/static/js/DecalGeometry.js"></script>
+  <script src="/static/js/OBJLoader.js"></script>
+  <script src="/static/js/GLTFLoader.js"></script>
+  <script src="/static/js/qrcode.min.js"></script>
+</head>
+<body>
+
+  <!-- Studio Header -->
+  <header class="studio-header">
+    <div class="brand-badge">
+      <span class="logo-icon">🗡️</span>
+      <h1>TattooForge</h1>
+      <span class="badge-pro">PRO 3D</span>
+    </div>
+
+    <div class="header-actions">
+      <button class="btn btn-outline btn-sm" id="turntable-btn" title="Toggle 360° Turntable Rotation">
+        🔄 360° Turntable
+      </button>
+      <button class="btn btn-outline btn-sm" id="share-qr-btn" title="Share 3D Model with Client's iPad / Phone">
+        📱 Client Wi-Fi Sync
+      </button>
+      <button class="btn btn-primary btn-sm" id="snapshot-btn" title="Capture High-Resolution 3D Snapshot">
+        📸 Snapshot
+      </button>
+    </div>
+  </header>
+
+  <!-- Main Workstation Layout -->
+  <main class="studio-workspace">
+    
+    <!-- Left Column: Anatomy, Skin Realism & Deformation -->
+    <aside class="studio-panel panel-left">
+      
+      <!-- Anatomical Region -->
+      <div class="panel-section">
+        <div class="section-title">
+          <span>Anatomical Region</span>
+        </div>
+        <div class="control-group">
+          <select id="anatomy-region-select" onchange="TattooForgeApp.switchRegion(this.value)">
+            <option value="forearm" selected>Forearm & Hand (Sculpted HD)</option>
+            <option value="upperarm">Upper Arm & Sleeve (Sculpted HD)</option>
+            <option value="ribs">Torso & Rib Cage (Sculpted HD)</option>
+            <option value="thigh">Thigh & Knee (Sculpted HD)</option>
+            <option value="male_full">Male Anatomy (Full Body 3D Scan)</option>
+            <option value="female_full">Female Anatomy (Full Body 3D Scan)</option>
+          </select>
+        </div>
+        <button class="btn btn-outline btn-block btn-sm" id="upload-scan-btn">
+          📂 Import Custom 3D Scan (.obj/.gltf)
+        </button>
+        <input type="file" id="scan-file-input" accept=".obj,.gltf,.glb,.stl" style="display: none;" />
+      </div>
+
+      <!-- Realistic Skin Tone & Color Wheel -->
+      <div class="panel-section">
+        <div class="section-title">
+          <span>Skin Tone Color Wheel</span>
+          <div class="wheel-mode-toggle">
+            <button class="wheel-mode-btn active" id="wheel-mode-skin" type="button" title="Human Skin Undertones Gamut">Skin</button>
+            <button class="wheel-mode-btn" id="wheel-mode-full" type="button" title="Full 360° Chromatic Spectrum">360°</button>
+          </div>
+        </div>
+
+        <!-- Interactive 2D Color Wheel Disc -->
+        <div class="skin-wheel-wrapper">
+          <canvas id="skin-color-wheel" width="360" height="360" class="skin-wheel-canvas" title="Click or drag to select skin tone undertone"></canvas>
+        </div>
+
+        <!-- Live Tone Card with Swatch, Undertone Title, Hex Input & Eyedropper -->
+        <div class="skin-tone-card">
+          <div class="skin-tone-preview-box" id="skin-preview-swatch" style="background: #ba8558;" title="Active Skin Color"></div>
+          <div class="skin-tone-details">
+            <div class="skin-tone-name" id="skin-tone-name">Type III: Golden / Olive</div>
+            <div class="skin-tone-hex-row">
+              <input type="text" id="skin-hex-input" value="#BA8558" maxlength="7" spellcheck="false" title="Hex Color Code" />
+              <button class="btn btn-outline btn-xs" id="skin-eyedropper-btn" type="button" title="Sample Color from Screen or Image">
+                💧 Pick
+              </button>
+              <input type="color" id="skin-native-color-picker" value="#ba8558" style="display: none;" />
+            </div>
+          </div>
+        </div>
+
+        <!-- Melanin Depth / Lightness Slider -->
+        <div class="control-group" style="margin-top: 0.75rem;">
+          <div class="control-label">
+            <span>Melanin Density / Depth</span>
+            <span class="val" id="melanin-val">40%</span>
+          </div>
+          <input type="range" id="melanin-slider" min="0" max="100" value="40">
+        </div>
+
+        <!-- Fitzpatrick Scale Presets (Quick 1-Click Access) -->
+        <div class="control-group" style="margin-top: 0.75rem;">
+          <div class="control-label">
+            <span>Quick Presets (Fitzpatrick I – VI)</span>
+          </div>
+          <div class="skin-tone-grid">
+            <div class="skin-tone-swatch" data-fitzpatrick="1" style="background: #e2b79f;" title="Type I: Porcelain / Rosy Peach"><span>I</span></div>
+            <div class="skin-tone-swatch" data-fitzpatrick="2" style="background: #d4a383;" title="Type II: Fair / Warm Beige"><span>II</span></div>
+            <div class="skin-tone-swatch active" data-fitzpatrick="3" style="background: #ba8558;" title="Type III: Golden / Olive"><span>III</span></div>
+            <div class="skin-tone-swatch" data-fitzpatrick="4" style="background: #824925;" title="Type IV: Caramel / Warm Bronze"><span>IV</span></div>
+            <div class="skin-tone-swatch" data-fitzpatrick="5" style="background: #3d1d0c;" title="Type V: Dark Chocolate / Espresso"><span>V</span></div>
+            <div class="skin-tone-swatch" data-fitzpatrick="6" style="background: #1c0d06;" title="Type VI: Deep Melanin / Ebony"><span>VI</span></div>
+          </div>
+        </div>
+
+        <div class="control-group" style="display: flex; align-items: center; justify-content: space-between; margin-top: 0.6rem;">
+          <span style="font-size: 0.8rem; font-weight: 600; color: var(--text-secondary);">Fresh vs. Healed Ink</span>
+          <label style="display: flex; align-items: center; gap: 6px; font-size: 0.75rem; cursor: pointer;">
+            <input type="checkbox" id="fresh-ink-toggle" style="accent-color: var(--accent-crimson);">
+            <span>Simulate Fresh (Swelling & Gloss)</span>
+          </label>
+        </div>
+
+        <div class="control-group" style="margin-top: 0.8rem;">
+          <div class="control-label">Studio Lighting Preset</div>
+          <select id="lighting-preset">
+            <option value="ring_light" selected>Studio Ring Light (Linework Clarity)</option>
+            <option value="parlor_warm">Warm Tattoo Parlor (3200K Ambient)</option>
+            <option value="clinical">Clinical Direct Spotlight</option>
+            <option value="daylight">Natural Window Daylight (5600K)</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Muscle Flex & Dynamic Skin Movement -->
+      <div class="panel-section">
+        <div class="section-title">
+          <span>Muscle Flex & Movement</span>
+        </div>
+
+        <div class="control-group">
+          <div class="control-label">
+            <span>Pronation / Twist Deformation</span>
+            <span class="val" id="twist-val">0%</span>
+          </div>
+          <input type="range" id="twist-slider" min="0" max="100" value="0">
+        </div>
+
+        <div class="control-group">
+          <div class="control-label">
+            <span>Muscle Flex / Contraction</span>
+            <span class="val" id="flex-val">0%</span>
+          </div>
+          <input type="range" id="flex-slider" min="0" max="100" value="0">
+        </div>
+      </div>
+
+      <!-- Curvature Strain Heatmap -->
+      <div class="panel-section">
+        <div class="section-title">
+          <span>Geometric Skin Strain</span>
+        </div>
+        <div style="display: flex; align-items: center; justify-content: space-between;">
+          <span style="font-size: 0.78rem; color: var(--text-secondary);">Curvature & Stretch Heatmap</span>
+          <label style="display: flex; align-items: center; gap: 6px; font-size: 0.75rem; cursor: pointer;">
+            <input type="checkbox" id="heatmap-toggle" style="accent-color: var(--accent-amber);">
+            <span>Enable Overlay</span>
+          </label>
+        </div>
+        <p style="font-size: 0.68rem; color: var(--text-muted); margin-top: 0.4rem;">
+          Colorizes regions of high geometric strain (red/amber = high stretch; blue/cyan = flat).
+        </p>
+      </div>
+
+    </aside>
+
+    <!-- Center Column: 3D Viewport -->
+    <section class="viewport-container" id="viewport-container">
+      
+      <!-- Top Floating Toolbar -->
+      <div class="viewport-floating-toolbar">
+        <button class="tool-btn active" data-mode="view" title="Orbit, Pan, and Inspect 3D Model">
+          👁️ 3D View
+        </button>
+        <button class="tool-btn" data-mode="place" title="Click to Position / Project Tattoo Decal onto Skin">
+          🎯 Place Tattoo
+        </button>
+        <button class="tool-btn" data-mode="marker" title="Draw Freehand Surgical Marker Guidelines">
+          ✏️ 3D Skin Marker
+        </button>
+        <button class="tool-btn" id="clear-marker-btn" title="Clear Marker Lines" style="font-size: 0.75rem; color: var(--text-muted);">
+          🧹 Clear Lines
+        </button>
+      </div>
+
+      <!-- Keyboard Navigation Hint -->
+      <div class="viewport-keyboard-hint">
+        <span><kbd>◀</kbd> <kbd>▶</kbd> Rotate</span>
+        <span class="sep">•</span>
+        <span><kbd>▲</kbd> <kbd>▼</kbd> Angle</span>
+        <span class="sep">•</span>
+        <span><kbd>+</kbd> <kbd>-</kbd> Zoom</span>
+      </div>
+
+      <!-- Desktop Zoom Controls Overlay -->
+      <div class="viewport-zoom-controls">
+        <button class="zoom-btn" id="zoom-in-btn" title="Zoom In (+ / PageUp)">
+          <span>➕</span>
+        </button>
+        <div class="zoom-level-label" id="zoom-level-val">100%</div>
+        <button class="zoom-btn" id="zoom-out-btn" title="Zoom Out (- / PageDown)">
+          <span>➖</span>
+        </button>
+        <button class="zoom-btn zoom-btn-reset" id="reset-zoom-btn" title="Reset View (0 / Home)">
+          <span>⟲</span>
+        </button>
+      </div>
+
+      <!-- 3D Canvas -->
+      <canvas id="webgl-canvas"></canvas>
+
+      <!-- Bottom Camera Presets -->
+      <div class="camera-presets-bar">
+        <div class="preset-chip active" data-region="forearm">Forearm & Hand</div>
+        <div class="preset-chip" data-region="upperarm">Upper Arm</div>
+        <div class="preset-chip" data-region="ribs">Torso / Ribs</div>
+        <div class="preset-chip" data-region="thigh">Thigh</div>
+        <div class="preset-chip" data-region="male_full">Male Body</div>
+        <div class="preset-chip" data-region="female_full">Female Body</div>
+      </div>
+
+    </section>
+
+    <!-- Right Column: Artwork, Layers & Stencil Production -->
+    <aside class="studio-panel panel-right">
+      
+      <!-- Artwork Ingestion -->
+      <div class="panel-section">
+        <div class="section-title">
+          <span>Artwork & Stencil Ingestion</span>
+        </div>
+
+        <div class="dropzone" id="artwork-dropzone">
+          <div class="icon">📥</div>
+          <p>Drop Tattoo Artwork (PNG/JPG)</p>
+          <span class="hint">Auto-background removal & line isolation</span>
+        </div>
+        <input type="file" id="artwork-file-input" accept="image/*" style="display: none;" />
+
+        <div style="margin-top: 0.8rem;">
+          <div class="control-label" style="font-size: 0.72rem;">Quick Flash Presets</div>
+          <div class="sample-flash-grid">
+            <div class="sample-flash-card" onclick="TattooForgeApp.loadSampleFlash('dagger_rose')">
+              <img src="/static/textures/samples/dagger_rose.png" />
+              <span>Neo-Trad Dagger</span>
+            </div>
+            <div class="sample-flash-card" onclick="TattooForgeApp.loadSampleFlash('sacred_mandala')">
+              <img src="/static/textures/samples/sacred_mandala.png" />
+              <span>Mandala</span>
+            </div>
+            <div class="sample-flash-card" onclick="TattooForgeApp.loadSampleFlash('fine_line_snake')">
+              <img src="/static/textures/samples/fine_line_snake.png" />
+              <span>Serpent</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Active Decal Transform & Ink Tuning -->
+      <div class="panel-section">
+        <div class="section-title">
+          <span>Tattoo Transform & Ink Tuning</span>
+        </div>
+
+        <div class="control-group">
+          <div class="control-label">
+            <span>Size / Scale</span>
+            <span class="val" id="scale-val">1.4x</span>
+          </div>
+          <input type="range" id="decal-scale-slider" min="0.4" max="3.5" step="0.05" value="1.4">
+        </div>
+
+        <div class="control-group">
+          <div class="control-label">
+            <span>In-Plane Rotation</span>
+            <span class="val" id="rotation-val">0°</span>
+          </div>
+          <input type="range" id="decal-rotation-slider" min="0" max="360" value="0">
+        </div>
+
+        <div class="control-group">
+          <div class="control-label">
+            <span>Ink Density / Opacity</span>
+            <span class="val" id="opacity-val">92%</span>
+          </div>
+          <input type="range" id="decal-opacity-slider" min="10" max="100" value="92">
+        </div>
+
+        <div class="control-group">
+          <div class="control-label">Ink Blending Mode</div>
+          <select id="decal-blend-mode">
+            <option value="multiply" selected>Multiply (Natural Dermal Absorption)</option>
+            <option value="normal">Normal (Opaque Proofing)</option>
+          </select>
+        </div>
+
+        <div style="display: flex; gap: 6px; margin-top: 0.6rem;">
+          <button class="btn btn-outline btn-sm" id="mirror-btn" style="flex: 1;">
+            🪞 Flip Mirror
+          </button>
+          <button class="btn btn-outline btn-sm" id="delete-layer-btn" style="color: var(--accent-crimson);">
+            🗑️ Delete
+          </button>
+        </div>
+      </div>
+
+      <!-- Layer Stack -->
+      <div class="panel-section">
+        <div class="section-title">
+          <span>Tattoo Layers</span>
+        </div>
+        <div class="layer-list" id="layer-list">
+          <!-- Populated dynamically by DecalEngine -->
+        </div>
+      </div>
+
+      <!-- Stencil & Transfer Production -->
+      <div class="panel-section">
+        <div class="section-title">
+          <span>Thermal Stencil Production</span>
+        </div>
+        <button class="btn btn-outline btn-block btn-sm" id="download-thermal-btn" style="margin-bottom: 0.5rem;">
+          🖨️ Thermal Stencil (Spirit/PocketJet)
+        </button>
+        <button class="btn btn-outline btn-block btn-sm" id="download-compensated-btn">
+          📐 Compensated Curvature Stencil
+        </button>
+      </div>
+
+    </aside>
+
+  </main>
+
+  <!-- Wi-Fi QR Code Share Modal -->
+  <div class="modal-backdrop" id="qr-modal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>📱 Studio Client Wi-Fi Sync</h3>
+        <button class="close-btn">&times;</button>
+      </div>
+      <div class="qr-container">
+        <div id="qrcode-box"></div>
+        <div class="qr-info">
+          <p>Scan with your studio iPad or client's phone camera to view and orbit this 3D model in real-time:</p>
+          <code id="qr-studio-url">http://192.168.x.x:8000</code>
+        </div>
+      </div>
+      <button class="btn btn-primary btn-block close-btn" style="margin-top: 1rem;">Done</button>
+    </div>
+  </div>
+
+  <!-- Workstation Core Scripts -->
+  <script src="/static/js/skin_shader.js"></script>
+  <script src="/static/js/skin_color_wheel.js"></script>
+  <script src="/static/js/anatomy_models.js"></script>
+  <script src="/static/js/decal_engine.js"></script>
+  <script src="/static/js/curvature_heatmap.js"></script>
+  <script src="/static/js/app.js"></script>
+
+</body>
+</html>

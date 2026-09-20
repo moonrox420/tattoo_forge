@@ -1,0 +1,30 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "tattooforge"
+version = "2.0.7"
+description = "TattooForge Pro — 3D Tattoo Visualization, Stencil Extraction, and Curvature Analysis Engine"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+  "fastapi>=0.110.0",
+  "uvicorn>=0.28.0",
+  "numpy>=1.24.0",
+  "pillow>=10.0.0",
+  "scipy>=1.10.0",
+  "python-multipart>=0.0.9",
+  "pydantic>=2.0.0",
+  "matplotlib>=3.7.0",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0.0", "httpx>=0.27.0"]
+
+[project.scripts]
+tattooforge = "run_studio:main"
+
+[tool.pycleaner]
+exclude = ["migrations/", "generated/"]
+line-length = 88
